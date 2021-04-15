@@ -6,7 +6,7 @@ public class WordNet {
 	private HashMap<Integer, String> mySynset;
 	private HashMap<String, Node> nounLU; // helps the process of traversing through nouns
 	private int numSynsets; // # of synsets
-	private Digraph myHypernym;
+	private Digraph myHypernym, DG;
 	private ShortestCommonAncestor sca;
 
 	public WordNet(String synsets, String hypernyms) throws FileNotFoundException {
@@ -56,35 +56,21 @@ public class WordNet {
 
 	// make the digraph and read the hypernyms file
 	private void readHyper(String hypernyms) throws FileNotFoundException {
-		myHypernym = new Digraph(numSynsets * 2);
+		myHypernym = new Digraph(numSynsets);
 		File input = new File("hypernyms.txt");
 		Scanner in = new Scanner(input);
-		int roots = 0; // # of roots
-		boolean[] rootCheck = new boolean[numSynsets]; // true if an index is not a root, false if it is
-
-		while (in.hasNext()) {
-			String s = in.nextLine();
+		String s = in.nextLine();
+		while (in.hasNextLine()) {
 			String[] myFields = s.split(",");
-			int numFields = myFields.length;
-
-			// this is a possible root if there is only one field in the string
-			if (numFields == 1) roots++;
-			System.out.println(rootCheck.length);
-			rootCheck[Integer.parseInt(myFields[0])] = true;
-
-			for (int i = 1; i < numFields; i++) {
-				myHypernym.addEdge(Integer.parseInt(myFields[0]), Integer.parseInt(myFields[i]));
+			for (int i = 1; i < myFields.length; i++) {
+				//System.out.println(myFields[i]);
+				myHypernym.addEdge(Integer.parseInt(myFields[0])/2, Integer.parseInt(myFields[i])/2);
 			}
+			s = in.nextLine();
 		}
-
-		// now we test for only a singular possible root
-		for (int i = 0; i < rootCheck.length; i++) {
-			if (!rootCheck[i]) roots++;
-		}
-		if (roots != 1) throw new IllegalArgumentException("roots must be equal to 1");
-
-		// test for D.A.G. (directed acyclic graph)
-		// write later
+		
+		// generate the ShortestCommonAncestor instance
+		sca = new ShortestCommonAncestor(myHypernym);
 	}
 
 	// returns all WordNet nouns
@@ -107,7 +93,7 @@ public class WordNet {
 			ans += noun1.charAt(i);
 			i++;
 		}
-		return ans;
+		return "The shortest common ancestor between \"" + noun1 + "\" and \"" + noun2 + "\" is: " + ans;
 	}
 
 	public int distance (String nounA, String nounB) {
@@ -147,7 +133,7 @@ public class WordNet {
 		System.out.println("# synsets: " + wordnet.numSynsets);
 		assert !wordnet.isNoun("gjgjgjg");
 		assert wordnet.isNoun("1530s");
-		System.out.println(wordnet.sca("Alan_Rickman", "Alpena"));
+		System.out.println(wordnet.sca("1860s", "1870s"));
 	}
 
 }
