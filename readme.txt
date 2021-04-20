@@ -16,14 +16,17 @@ Programming Assignment 4: WordNet
  *  Describe concisely the data structure(s) you used to store the 
  *  information in synsets.txt. Why did you make this choice?
  **************************************************************************** */
-
+For synsets, I used a HashMap<Integer, String> structure as I thought it was the best
+possible way to map the noun key to the noun itself (an int and a string, respectively).
 
 
 /* *****************************************************************************
  *  Describe concisely the data structure(s) you used to store the 
  *  information in hypernyms.txt. Why did you make this choice?
  **************************************************************************** */
-
+For hypernyms, I used a digraph because it is essentially a map structure that can have
+multiple values per key, and like a HashMap it is a good way to map a noun key to the noun itself,
+as well as to link two or more related nouns.
 
 
 /* *****************************************************************************
@@ -89,13 +92,15 @@ ancestorSubset()
 /* *****************************************************************************
  *  Describe any serious problems you encountered.                    
  **************************************************************************** */
-
+Rachel's sickness is causing us to not be as productive as a unit as usual, but
+there isn't a whole lot I can do about that other than hope she gets better soon.
 
 /* *****************************************************************************
  *  If you worked with a partner, give one
  *  sentence explaining what each of you contributed.
  **************************************************************************** */
-
+I worked on the part of the WordNet class and the Outcast class. Rachel's job is to work on
+the ShortestCommonAncestor class.
 
 
 
