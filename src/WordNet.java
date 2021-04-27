@@ -1,63 +1,69 @@
 import java.util.*;
-import java.io.File;
-import java.io.FileNotFoundException;
+import java.io.*;
 
 public class WordNet {
-	private HashMap<Integer, String> mySynset;
-	private HashMap<String, Node> nounLU; // helps the process of traversing through nouns
-	private int numSynsets; // # of synsets
-	private Digraph myHypernym, DG;
-	private ShortestCommonAncestor sca;
+    private HashMap<Integer, String> mySynset;//mapped values are synsets whose ids are keys
+    private HashMap<String, Node> nounLU;//mapped values are root nodes referencing a linked list containing ids of synsets in which the key noun appears 
+    private int numSynsets; //# of synsets
+    private Digraph myHypernym;
+    private ShortestCommonAncestor sca;
+        
+    //constructor takes the name of the two input files
+    public WordNet(String synsets, String hypernyms) throws FileNotFoundException {
+        readSyn(synsets);
+	//readHyper(hypernyms);
+    }
+        
+    private class Node {
+        int nodeID;
+        Node next;
+        
+        public Node(int id) {
+            //this.nodeID = id;
+            nodeID=id;
+        }
+    }
 
-	public WordNet(String synsets, String hypernyms) throws FileNotFoundException {
-		readSyn(synsets);
-		readHyper(hypernyms);
-
-	}
-
-	// Nodes for nouns so we can traverse through the maps if we need to
-	private class Node {
-		private int nodeID;
-		private Node next;
-
-		public Node(int id) {
-			this.nodeID = id;
+    private void readSyn(String synsets) throws FileNotFoundException {
+        mySynset = new HashMap<Integer, String>(); 
+        nounLU = new HashMap<String, Node>(); 
+                
+        //open synsets file and create Scanner object to read it
+        File input = new File(synsets);
+        Scanner in = new Scanner(input);
+        
+        while (in.hasNext()) {
+            String s = in.nextLine();
+            String[] myFields = s.split(",");
+            //myFields[0] contains synset id 
+            //myFields[1] contains synset
+            //myFields[2] contains gloss 
+            String[] nouns = myFields[1].split(" ");//elements are the synonyms in the synset
+                          
+            for (int i = 0; i < nouns.length; i++) {              
+                if (nounLU.containsKey(nouns[i])) {//noun already maps a linked list
+                    //traverse the list
+                    Node temp = nounLU.get(nouns[i]), first = temp;
+                    while (temp.next != null) 
+                        temp = temp.next;
+                        
+                    temp.next = new Node(Integer.parseInt(myFields[0]));//add new node containing synset id to the end of the list
+                    nounLU.put(nouns[i], first);//update entry in HashMap 
 		}
-	}
-
-	// reads synsets file and makes a HashMap of all the nouns
-	private void readSyn(String synsets) throws FileNotFoundException {
-		mySynset = new HashMap<Integer, String>();
-		nounLU = new HashMap<String, Node>();
-		File input = new File("synsets.txt");
-		Scanner in = new Scanner(input);
-
-		while (in.hasNext()) {
-			String s = in.nextLine();
-			String[] myFields = s.split(","); // splits string up into sections
-			String[] nouns = myFields[1].split(" ");
-
-			for (int i = 0; i < nouns.length; i++) {
-				if (nounLU.containsKey(nouns[i])) {
-					Node temp = nounLU.get(nouns[i]), first = temp;
-					while (temp.next != null) temp = temp.next;
-
-					temp.next = new Node(Integer.parseInt(myFields[0])); // new node will contain that numerical value as a string
-					nounLU.put(nouns[i], first);
-				}
-				else
-					nounLU.put(nouns[i], new Node(Integer.parseInt(myFields[0]))); // adds nouns[i] if not already there
-
-				mySynset.put(Integer.parseInt(myFields[0]), myFields[1]);
-				numSynsets++;
-			}
-		}
-	}
+                    
+                else
+                    nounLU.put(nouns[i], new Node(Integer.parseInt(myFields[0]))); // adds nouns[i] if not already there
+                
+                mySynset.put(Integer.parseInt(myFields[0]), myFields[1]);//add synset id key and synset value
+                numSynsets++;//update number of synsets
+            }
+        }
+    }
 
 	// make the digraph and read the hypernyms file
 	private void readHyper(String hypernyms) throws FileNotFoundException {
 		myHypernym = new Digraph(numSynsets);
-		File input = new File("hypernyms.txt");
+		File input = new File(hypernyms);
 		Scanner in = new Scanner(input);
 		String s = in.nextLine();
 		while (in.hasNextLine()) {
@@ -127,13 +133,13 @@ public class WordNet {
 		};
 	}
 
-
+/*
 	public static void main(String[] args) throws FileNotFoundException {
-		WordNet wordnet = new WordNet("synsets.txt", "hypernyms.txt");
+		WordNet wordnet = new WordNet();
 		System.out.println("# synsets: " + wordnet.numSynsets);
 		assert !wordnet.isNoun("gjgjgjg");
 		assert wordnet.isNoun("1530s");
 		System.out.println(wordnet.sca("1860s", "1870s"));
-	}
+	}*/
 
 }
