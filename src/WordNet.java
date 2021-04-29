@@ -5,25 +5,26 @@ public class WordNet {
     private HashMap<Integer, String> mySynset;//mapped values are synsets whose ids are keys
     private HashMap<String, Node> nounLU;//mapped values are root nodes referencing a linked list containing ids of synsets in which the key noun appears 
     private int numSynsets; //# of synsets
+    
     private Digraph myHypernym;
     private ShortestCommonAncestor sca;
         
     //constructor takes the name of the two input files
     public WordNet(String synsets, String hypernyms) throws FileNotFoundException {
         readSyn(synsets);
-	//readHyper(hypernyms);
+	readHyper(hypernyms);
     }
         
     private class Node {
-        int nodeID;
+        int id;//synset id
         Node next;
         
-        public Node(int id) {
-            //this.nodeID = id;
-            nodeID=id;
+        Node(int id) {
+            this.id = id;
         }
     }
 
+    //read synsets from file and store in mySynset; 
     private void readSyn(String synsets) throws FileNotFoundException {
         mySynset = new HashMap<Integer, String>(); 
         nounLU = new HashMap<String, Node>(); 
@@ -60,86 +61,111 @@ public class WordNet {
         }
     }
 
-	// make the digraph and read the hypernyms file
-	private void readHyper(String hypernyms) throws FileNotFoundException {
-		myHypernym = new Digraph(numSynsets);
-		File input = new File(hypernyms);
-		Scanner in = new Scanner(input);
-		String s = in.nextLine();
-		while (in.hasNextLine()) {
-			String[] myFields = s.split(",");
-			for (int i = 1; i < myFields.length; i++) {
-				//System.out.println(myFields[i]);
-				myHypernym.addEdge(Integer.parseInt(myFields[0])/2, Integer.parseInt(myFields[i])/2);
-			}
-			s = in.nextLine();
-		}
-		
-		// generate the ShortestCommonAncestor instance
-		sca = new ShortestCommonAncestor(myHypernym);
-	}
+    //creates digraph myHypernym using data in hypernyms file 
+    private void readHyper(String hypernyms) throws FileNotFoundException {
+	myHypernym = new Digraph(numSynsets);//initializes digraph with vertices for each synset 
+        
+        //open hypernyms file and create Scanner object to read it
+	File input = new File(hypernyms);
+	Scanner in = new Scanner(input);
+	
+        String s = in.nextLine();
+	while (in.hasNextLine()) {
+            String[] myFields = s.split(",");
+            //myFields[0] contains synset id
+            //subsequent elements are ids of hypernyms
+            
+            for (int i = 1; i < myFields.length; i++)
+		myHypernym.addEdge(Integer.parseInt(myFields[0]), Integer.parseInt(myFields[i]));
+            
+            s = in.nextLine();
+	}	
+    }
 
-	// returns all WordNet nouns
-	public Iterable<String> nouns() {
-		return nounLU.keySet();
-	}
+    //returns the set of all WordNet nouns
+    public Iterable<String> nouns() {
+	return nounLU.keySet();
+    }
 
-	// is the word a valid WordNet noun? returns true if it is
-	public boolean isNoun(String word) {
-		if (word != null) return nounLU.containsKey(word);
-		else throw new java.lang.NullPointerException("isNoun() cannot return null");
-	}
+    //returns true of the given word is a valid WordNet noun
+    public boolean isNoun(String word) {
+	if (word != null) return nounLU.containsKey(word);
+	else throw new java.lang.NullPointerException("isNoun() cannot return null");
+    }
 
-	// shortest common ancestor
-	public String sca(String noun1, String noun2) {
-		String ans = "";
-		int i = 0;
-		while (noun1.charAt(i) == noun2.charAt(i)) {
-			if (i == noun1.length() || i == noun2.length()) break;
-			ans += noun1.charAt(i);
-			i++;
-		}
-		return "The shortest common ancestor between \"" + noun1 + "\" and \"" + noun2 + "\" is: " + ans;
-	}
+    //returns a synset that is the shortest common ancestor of the given nouns
+    public String sca(String noun1, String noun2) {
+        
+        sca=new ShortestCommonAncestor(myHypernym); 
+        
+        //create subset with each of noun1's synset ids
+        List<Integer>synsets1=new ArrayList<Integer>();     
+        Node setID=nounLU.get(noun1);
+        while(setID!=null){
+            synsets1.add(setID.id);
+            setID=setID.next;
+        }
+        
+        //create subset with each of noun2's synset ids
+        List<Integer>synsets2=new ArrayList<Integer>(); 
+        setID=nounLU.get(noun2);
+        while(setID!=null){
+            synsets2.add(setID.id);
+            setID=setID.next;
+        }
+        
+        //find shortest common ancestor between these subsets
+        int ancestorID=sca.ancestorSubset(synsets1, synsets2);
+        
+        //return the synset indexed by that synset id
+	return mySynset.get(ancestorID);
+    }
+    
+    //returns distance between noun1 and noun2
+    public int distance (String noun1, String noun2) {
+        
+	if (!isNoun(noun1) || !isNoun(noun2))
+            throw new IllegalArgumentException();
+        
+        //create subset with each of noun1's synset ids
+        List<Integer>synsets1=new ArrayList<Integer>();     
+        Node setID=nounLU.get(noun1);
+        while(setID!=null){
+            synsets1.add(setID.id);
+            setID=setID.next;
+        }
+        
+        //create subset with each of noun2's synset ids
+        List<Integer>synsets2=new ArrayList<Integer>(); 
+        setID=nounLU.get(noun2);
+        while(setID!=null){
+            synsets2.add(setID.id);
+            setID=setID.next;
+        }
+	
+	//return length of shortest ancestral path 
+        return sca.lengthSubset(synsets1, synsets2);
+    }
+    
+    //demonstrates each method in the class 
+    public static void main(String[] args) throws FileNotFoundException {
+        //constructormethod 
+        WordNet words=new WordNet("synsets.txt","hypernyms.txt");
+        
+        //nouns() method
+        int count=0;
+        for(String noun : words.nouns())
+            count++;
+        System.out.println("There are "+count+" nouns in the WordNet");
+        
+        //isNoun() method
+        System.out.println("\"gigolo\" is in the WordNet: "+words.isNoun("gigolo"));
+        System.out.println("\"boy toy\" is in the WordNet: "+words.isNoun("boy_toy"));
 
-	public int distance (String nounA, String nounB) {
-		if (!isNoun(nounA) || !isNoun(nounB))
-			throw new IllegalArgumentException();
-
-		Iterable<Integer> it0 = getIter(nounA), it1 = getIter(nounB);
-		return sca.lengthSubset(it0, it1); // note to self: maybe use sca.length(it0, it1) here instead, idk?
-	}
-
-	private Iterable<Integer> getIter(final String noun) {
-		return new Iterable<Integer>() {
-			public Iterator<Integer> iterator() {
-				return new Iterator<Integer>() {
-					Node curr = nounLU.get(noun);
-
-					public boolean hasNext() {
-						return curr != null;
-					}
-
-					public Integer next() {
-						Integer val = curr.nodeID;
-						curr = curr.next;
-						return val;
-					}
-
-					public void remove() {
-					}				   
-				};
-			}
-		};
-	}
-
-/*
-	public static void main(String[] args) throws FileNotFoundException {
-		WordNet wordnet = new WordNet();
-		System.out.println("# synsets: " + wordnet.numSynsets);
-		assert !wordnet.isNoun("gjgjgjg");
-		assert wordnet.isNoun("1530s");
-		System.out.println(wordnet.sca("1860s", "1870s"));
-	}*/
-
+        //sca() method
+        System.out.println("The shortest common ancestor of \"virginity\" and \"virility\" is: "+words.sca("virginity", "virility"));
+        
+        //distance method()
+        System.out.println("The distance between \"virginity\" and \"virility\" is: "+words.distance("virginity", "virility"));   
+    }
 }
