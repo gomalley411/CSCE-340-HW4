@@ -1,3 +1,4 @@
+import java.io.*;
 import java.util.*;
 
 public class ShortestCommonAncestor {
@@ -114,4 +115,38 @@ public class ShortestCommonAncestor {
         }
         return ancestor; 
     }   
+    
+    //demonstrate each method of the class
+   public static void main(String[] args) throws IOException{
+        //create Digraph from file
+        File inFile=new File("digraph25.txt");
+        Scanner input=new Scanner(inFile);
+        Digraph graph=new Digraph(input);
+        
+        //create subsets of vertices
+        List<Integer> A=new ArrayList(); 
+        A.add(13);
+        A.add(23);
+        A.add(24);
+        
+        List<Integer> B=new ArrayList();
+        B.add(6);
+        B.add(16);
+        B.add(17);
+        
+        //constructor method
+        ShortestCommonAncestor shortest=new ShortestCommonAncestor(graph);
+        
+        //ancestor() method
+        System.out.println("The shortest common ancestor of vertices 17 and 24 is: "+shortest.ancestor(17,24));
+        
+        //length() method
+        System.out.println("The length of the shortest ancestral path is: "+shortest.length(17, 24));
+        
+        //ancestorSubset() method
+        System.out.println("The shortest common ancestor of subsets A={13, 23, 24} and B={6, 16, 17} is: "+shortest.ancestorSubset(A, B));
+        
+        //lengthSubset() method
+        System.out.println("The length of the shortest ancestral path is: "+shortest.lengthSubset(A, B));
+    }
 }
